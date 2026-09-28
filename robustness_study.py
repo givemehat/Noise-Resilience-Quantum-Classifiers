@@ -16,6 +16,7 @@ from qiskit_machine_learning.kernels import FidelityQuantumKernel
 from qiskit_aer import AerSimulator
 from qiskit_aer.noise import NoiseModel, depolarizing_error
 from qiskit_aer.primitives import SamplerV2 as AerSamplerV2
+from qiskit.primitives import StatevectorSampler
 from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
 import os
 import warnings
@@ -125,7 +126,7 @@ def run_experiments():
             for noise_name, (p1, p2) in NOISE_LEVELS.items():
                 if p1 == 0 and p2 == 0:
                     # Ideal: Exact statevector simulation (No sampling noise)
-                    sampler = AerSamplerV2(run_options={"shots": None}) 
+                    sampler = StatevectorSampler() 
                 else:
                     # Noisy: 1024 shots with depolarizing noise
                     noise_model = NoiseModel()
