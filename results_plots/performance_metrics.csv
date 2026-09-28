@@ -1,0 +1,6 @@
+Model,Accuracy,Precision,Recall,F1-Score,Train Time (s)
+Classical SVM,0.8,0.5,0.3333333333333333,0.4,0.001
+VQC (Ideal),0.7,0.0,0.0,0.0,11.268
+VQC (Noisy),0.7666666666666667,0.0,0.0,0.0,11.325
+QSVC (Ideal),0.7666666666666667,0.0,0.0,0.0,10.053
+QSVC (Noisy),0.7666666666666667,0.0,0.0,0.0,10.6
