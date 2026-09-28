@@ -155,7 +155,7 @@ def run_experiments():
                         'F1': f1_score(y_test, y_pred_vqc, zero_division=0)
                     })
                 
-                qsvc = QSVC(quantum_kernel=FidelityQuantumKernel(fidelity=ComputeUncompute(sampler=sampler, transpiler=pm)))
+                qsvc = QSVC(quantum_kernel=FidelityQuantumKernel(feature_map=feature_map, fidelity=ComputeUncompute(sampler=sampler, transpiler=pm)))
                 qsvc.fit(X_train, y_train)
                 y_pred_qsvc = qsvc.predict(X_test)
                 results.append({
