@@ -1,0 +1,11 @@
+Dataset,Model,Depth,1Q_Gates,CNOTs
+Binary_Iris,VQC_Circuit,15,16,6
+Binary_Iris,ComputeUncompute_Kernel,18,20,6
+Make_Moons,VQC_Circuit,15,16,6
+Make_Moons,ComputeUncompute_Kernel,18,20,6
+Make_Circles,VQC_Circuit,15,16,6
+Make_Circles,ComputeUncompute_Kernel,18,20,6
+Breast_Cancer,VQC_Circuit,15,16,6
+Breast_Cancer,ComputeUncompute_Kernel,18,20,6
+Wine,VQC_Circuit,15,16,6
+Wine,ComputeUncompute_Kernel,18,20,6
