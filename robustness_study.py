@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.datasets import make_moons, make_circles, load_breast_cancer, load_iris
+from sklearn.datasets import make_moons, make_circles, load_breast_cancer, load_iris, load_wine
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.svm import SVC
@@ -33,21 +33,33 @@ NOISE_LEVELS = {
 def get_datasets():
     datasets = {}
     
-    # 1. Binary Iris
+    # 1. Binary Iris (Linearly Separable Baseline)
     iris = load_iris()
     X, y = iris.data, iris.target
-    idx = y < 2 # Binary classification
+    idx = y < 2
     datasets['Binary_Iris'] = (X[idx], y[idx])
     
-    # 2. Make Moons
+    # 2. Make Moons (Non-linear)
     X, y = make_moons(n_samples=100, noise=0.15, random_state=42)
     datasets['Make_Moons'] = (X, y)
     
-    # 3. Breast Cancer (downsampled)
+    # 3. Make Circles (Non-linear)
+    X, y = make_circles(n_samples=100, noise=0.1, factor=0.5, random_state=42)
+    datasets['Make_Circles'] = (X, y)
+    
+    # 4. Breast Cancer (Real-world, downsampled for quantum sim)
     bc = load_breast_cancer()
     X, y = bc.data, bc.target
     X, _, y, _ = train_test_split(X, y, train_size=100, stratify=y, random_state=42)
     datasets['Breast_Cancer'] = (X, y)
+    
+    # 5. Wine (Real-world binary classification subset)
+    wine = load_wine()
+    X, y = wine.data, wine.target
+    idx = y < 2 # Classes 0 and 1
+    X_wine, y_wine = X[idx], y[idx]
+    X_wine, _, y_wine, _ = train_test_split(X_wine, y_wine, train_size=100, stratify=y_wine, random_state=42)
+    datasets['Wine'] = (X_wine, y_wine)
     
     return datasets
 
@@ -80,12 +92,11 @@ def run_experiments():
     results = []
     circuit_metrics = []
     datasets = get_datasets()
-    print("Starting QML Robustness Experiments...")
+    print("Starting Comprehensive QML Robustness Experiments...")
     
-    # For VQC we will evaluate both COBYLA (increased budget) and SPSA
     optimizers_to_test = {
-        'VQC_COBYLA': COBYLA(maxiter=300),
-        'VQC_SPSA': SPSA(maxiter=100) # SPSA takes more shots per iter, 100 is equivalent robust budget
+        'VQC_COBYLA_300': COBYLA(maxiter=300),
+        'VQC_SPSA_100': SPSA(maxiter=100)
     }
     
     for ds_name, (X, y) in datasets.items():
@@ -113,28 +124,28 @@ def run_experiments():
             
             for noise_name, (p1, p2) in NOISE_LEVELS.items():
                 if p1 == 0 and p2 == 0:
-                    sampler = AerSamplerV2(default_shots=1024)
+                    # Ideal: Exact statevector simulation (No sampling noise)
+                    sampler = AerSamplerV2(run_options={"shots": None}) 
                 else:
+                    # Noisy: 1024 shots with depolarizing noise
                     noise_model = NoiseModel()
                     noise_model.add_all_qubit_quantum_error(depolarizing_error(p1, 1), ['rx', 'ry', 'rz', 'h', 'x'])
                     noise_model.add_all_qubit_quantum_error(depolarizing_error(p2, 2), ['cx', 'cz'])
-                    sampler = AerSamplerV2(default_shots=1024, options={'backend_options': {'noise_model': noise_model, 'method': 'statevector'}})
+                    sampler = AerSamplerV2(default_shots=1024, options={'backend_options': {'noise_model': noise_model}})
                 
                 pm = generate_preset_pass_manager(optimization_level=1, backend=AerSimulator())
                 
-                # Circuit Metrics
+                # Transpilation Circuit Metrics
                 if seed == SEEDS[0] and noise_name == 'Ideal':
                     v_depth, v_1q, v_cx = extract_circuit_metrics(feature_map.compose(ansatz), pm)
                     circuit_metrics.append({'Dataset': ds_name, 'Model': 'VQC_Circuit', 'Depth': v_depth, '1Q_Gates': v_1q, 'CNOTs': v_cx})
                     k_depth, k_1q, k_cx = extract_circuit_metrics(feature_map.compose(feature_map.inverse()), pm)
                     circuit_metrics.append({'Dataset': ds_name, 'Model': 'ComputeUncompute_Kernel', 'Depth': k_depth, '1Q_Gates': k_1q, 'CNOTs': k_cx})
 
-                # Train VQCs (COBYLA and SPSA)
                 for opt_name, optimizer in optimizers_to_test.items():
                     vqc = VQC(feature_map=feature_map, ansatz=ansatz, optimizer=optimizer, sampler=sampler, pass_manager=pm)
                     vqc.fit(X_train, np.eye(2)[y_train])
                     y_pred_vqc = np.argmax(vqc.predict(X_test), axis=1)
-                    
                     results.append({
                         'Dataset': ds_name, 'Seed': seed, 'Noise': noise_name, 'Model': opt_name,
                         'Accuracy': accuracy_score(y_test, y_pred_vqc),
@@ -143,11 +154,9 @@ def run_experiments():
                         'F1': f1_score(y_test, y_pred_vqc, zero_division=0)
                     })
                 
-                # QSVC
                 qsvc = QSVC(quantum_kernel=FidelityQuantumKernel(fidelity=ComputeUncompute(sampler=sampler, transpiler=pm)))
                 qsvc.fit(X_train, y_train)
                 y_pred_qsvc = qsvc.predict(X_test)
-                
                 results.append({
                     'Dataset': ds_name, 'Seed': seed, 'Noise': noise_name, 'Model': 'QSVC',
                     'Accuracy': accuracy_score(y_test, y_pred_qsvc),
@@ -174,7 +183,6 @@ def generate_plots(df):
         df_ds = df[df['Dataset'] == ds]
         
         plt.figure(figsize=(10, 6))
-        # Plot with error bars (seaborn barplot automatically calculates mean and 95% CI or std if estimator is set)
         sns.barplot(data=df_ds, x='Noise', y='F1', hue='Model', capsize=.1, errorbar='sd')
         plt.title(f'F1 Score across Noise Levels: {ds}\n(Mean ± Std across 5 seeds)', fontsize=14)
         plt.ylim(0, 1.1)
