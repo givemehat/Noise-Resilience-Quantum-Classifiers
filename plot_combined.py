@@ -4,6 +4,31 @@ import matplotlib.pyplot as plt
 import os
 
 df = pd.read_csv('results_revision/raw_results.csv')
+
+# --- Generate Paper Summary Table (mean +/- std with ddof=1) ---
+summary = df.groupby(['Dataset', 'Noise', 'Model']).agg({
+    'Accuracy': ['mean', 'std'],
+    'Precision': ['mean', 'std'],
+    'Recall': ['mean', 'std'],
+    'F1': ['mean', 'std']
+})
+summary.columns = ['_'.join(col) for col in summary.columns.values]
+
+formatted_table = pd.DataFrame()
+formatted_table['Dataset'] = summary.index.get_level_values('Dataset')
+formatted_table['Noise'] = summary.index.get_level_values('Noise')
+formatted_table['Model'] = summary.index.get_level_values('Model')
+
+for metric in ['Accuracy', 'Precision', 'Recall', 'F1']:
+    formatted_table[metric] = summary.apply(
+        lambda row: f"{row[f'{metric}_mean']:.3f} ± {row[f'{metric}_std']:.3f}" if pd.notnull(row[f'{metric}_std']) else f"{row[f'{metric}_mean']:.3f}", 
+        axis=1
+    ).values
+
+formatted_table.to_csv('results_revision/Oo_Paper_Summary_Table.csv', index=False)
+print("Saved Oo_Paper_Summary_Table.csv")
+
+# --- Generate Plots ---
 sns.set_theme(style="whitegrid", font_scale=1.1)
 
 for metric in ['Accuracy', 'F1']:
@@ -20,7 +45,7 @@ for metric in ['Accuracy', 'F1']:
             label.set_horizontalalignment('right')
     sns.move_legend(g_wide, "center left", bbox_to_anchor=(1.02, 0.5))
     g_wide.fig.subplots_adjust(wspace=0.1)
-    g_wide.savefig(f'results_revision/plots/Combined_{metric}_Landscape.png', dpi=300, bbox_inches='tight')
+    g_wide.savefig(f'results_revision/plots/Oo_Combined_{metric}_Landscape.png', dpi=300, bbox_inches='tight')
     plt.close()
 
     # 2. VERTICAL/PORTRAIT VERSION (For Single Column in Paper)
@@ -39,7 +64,7 @@ for metric in ['Accuracy', 'F1']:
     # Move legend outside the top right
     sns.move_legend(g_tall, "center left", bbox_to_anchor=(1.02, 0.5))
     g_tall.fig.subplots_adjust(hspace=0.4)
-    g_tall.savefig(f'results_revision/plots/Combined_{metric}_Vertical.png', dpi=300, bbox_inches='tight')
+    g_tall.savefig(f'results_revision/plots/Oo_Combined_{metric}_Vertical.png', dpi=300, bbox_inches='tight')
     plt.close()
 
-print("Generated both Landscape and Vertical versions!")
+print("Generated both Landscape and Vertical plot versions with Oo_ prefix!")
