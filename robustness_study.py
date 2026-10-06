@@ -168,5 +168,12 @@ def run_experiments():
                         'F1': f1_score(y_test, y_pred_vqc, zero_division=0)
                     })
 
+    # Save results
+    import os
+    os.makedirs('results_revision', exist_ok=True)
+    df = pd.DataFrame(results)
+    df.to_csv('results_revision/raw_results.csv', index=False)
+    print("Experiments completed. Results saved to results_revision/raw_results.csv")
+
 if __name__ == '__main__':
     run_experiments()
