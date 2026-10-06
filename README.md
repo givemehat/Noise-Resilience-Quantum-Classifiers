@@ -1,4 +1,7 @@
-# Noise Resilience and Parameter Efficiency of Quantum Classifiers: A Comparative Analysis
+# Noise Resilience and Parameter Efficiency of Quantum Classifiers: A Comparative Analysis Using IBM Qiskit 2.5.2
+
+**Authors:** Rajnish Singh, Utkrisht Patel, Rakesh Kumar  
+*International Journal of Computational Intelligence and Applications*
 
 This repository contains the official code, datasets, and reproducibility guide for our comparative study evaluating the resilience of Quantum Support Vector Classifiers (QSVC) against Variational Quantum Classifiers (VQC) under realistic hardware noise conditions.
 
@@ -11,7 +14,15 @@ The RBF-SVM was the most accurate model on every dataset (0.893 to 0.993). Among
 
 ---
 
-## 2. Repository Structure
+## 2. Research Questions Addressed
+This codebase is designed to answer three specific research questions (RQs):
+* **RQ1:** What is the difference in performance of variational and kernel-based quantum classifiers under depolarizing noise across various evaluation metrics?
+* **RQ2:** Is there a classification asymmetry in terms of precision and recall that is not captured by aggregate accuracy for quantum classifiers?
+* **RQ3:** How do the numbers of trainable parameters of the quantum models compare with those of classical models, and do these experiments support any claim of parameter efficiency?
+
+---
+
+## 3. Repository Structure
 
 ```text
 Noise-Resilience-Quantum-Classifiers/
@@ -44,7 +55,7 @@ Noise-Resilience-Quantum-Classifiers/
 
 ---
 
-## 3. Environment & Installation
+## 4. Environment & Installation
 
 To ensure exact reproducibility, it is highly recommended to run this code inside an isolated virtual environment matching the exact dependency tree used in the paper.
 
@@ -62,18 +73,24 @@ cd Noise-Resilience-Quantum-Classifiers
 python -m venv .venv
 source .venv/bin/activate  # On Windows use: .venv\Scripts\activate
 
-# Install the exact dependencies
+# Install the exact dependencies (Qiskit 2.5.2, Aer 0.17.2, scikit-learn 1.5.2, etc.)
 pip install -r requirements.txt
 ```
 
 ---
 
-## 4. Experimental Methodology
+## 5. Experimental Methodology
 
-### Datasets & Preprocessing
-The study evaluates models on 5 standard binary datasets. While physical `.csv` exports are available in the `dataset/` folder for manual inspection, the primary script loads them dynamically via `scikit-learn` to preserve exact state configurations.
-* **Preprocessing Pipeline:** Data is subjected to `train_test_split (test_size=0.3)` → `StandardScaler` → `PCA (n_components=2)` → `MinMaxScaler (0 to π)`.
-* **Subsampling:** The *Breast Cancer* and *Wine* datasets are downsampled to exactly 100 instances using stratified random sampling to respect the simulation constraints of noisy quantum circuits.
+### Datasets & Preprocessing (Algorithm 1)
+We evaluated the models on 5 standard binary datasets. While physical `.csv` exports are available in the `dataset/` folder for manual inspection, the primary script `robustness_study.py` loads them dynamically via `scikit-learn` to preserve exact state configurations.
+
+**Preprocessing Pipeline:**
+1. Split 70%/30% (stratified, `random_state=seed`)
+2. `StandardScaler` (zero mean, unit variance)
+3. `PCA (n_components=2)`
+4. `MinMaxScaler([0, π])`
+
+**Subsampling:** The *Breast Cancer* and *Wine* datasets are downsampled to exactly 100 instances using stratified random sampling to respect the simulation constraints of noisy quantum circuits.
 
 ### Quantum Models & Circuits
 * **Encoding:** A 2-qubit `ZZFeatureMap` (reps=2).
@@ -91,7 +108,7 @@ Experiments test three conditions using exact gate-level depolarizing errors:
 
 ---
 
-## 5. Reproducing the Experiments
+## 6. Reproducing the Experiments
 
 All randomness (train/test splits, PCA initialization, Optimizer weight initialization, and Simulator shot noise) is strictly anchored using 5 global seeds (`42, 100, 2023, 777, 1234`) across Numpy, Qiskit `algorithm_globals`, and the `AerSamplerV2` `seed_simulator` option.
 
@@ -109,9 +126,23 @@ python plot_combined.py
 
 ---
 
-## 6. Tracing Results to the Paper
+## 7. Tracing Results to the Paper
 
 A reviewer inspecting this repository can map the claims in the paper directly to the outputs in `results_revision/`:
-* **Table 1/2 (Accuracy/F1 Metrics):** Refer to `Oo_Paper_Summary_Table.csv` to see the strictly formatted "Mean ± Std" values for all models across all noise levels.
-* **Table (Gate Metrics):** Refer to `Oo_circuit_metrics.csv` to confirm the Transpiled Depth (15 vs 18) and CNOT (6) counts for the VQC and Kernel circuits respectively.
-* **Figures:** Refer to `plots/Oo_Combined_Accuracy_Vertical.png` and `plots/Oo_Combined_F1_Vertical.png` for the publication-ready visualizations containing Standard Deviation error bars over the 5 random seeds.
+
+### Table 2 & 5 (Accuracy, Precision, Recall, F1 Metrics)
+* Refer to `results_revision/Oo_Paper_Summary_Table.csv` and `results_revision/per_seed_results.csv`.
+* **Addressing RQ1 & RQ2:** The table mathematically verifies the classification asymmetry claim from Section 5.4: QSVC has higher recall than precision on *Breast Cancer*, *Wine*, and *make_circles*, but slightly higher precision on *Iris* and *make_moons*.
+
+### Table 4 (Gate Metrics)
+* Refer to `results_revision/Oo_circuit_metrics.csv`.
+* **Addressing RQ3:** Confirms the Transpiled Depth (15 for VQC vs 18 for Kernel), 1-Qubit gate counts (16 vs 20), and CNOTs (6 vs 6), verifying that the kernel circuit is slightly deeper than the VQC circuit.
+
+### Figures 2 & 3 (Performance Plots)
+* Refer to `results_revision/plots/Oo_Combined_Accuracy_Vertical.png` and `results_revision/plots/Oo_Combined_F1_Vertical.png`.
+* These images are publication-ready visualizations containing Standard Deviation error bars over the 5 random seeds, perfectly corresponding to Figures 2 and 3 in the manuscript.
+
+---
+
+## 8. License & Citation
+*If you use this codebase in your research, please cite the corresponding paper in the International Journal of Computational Intelligence and Applications.*
