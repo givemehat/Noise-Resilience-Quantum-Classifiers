@@ -1,4 +1,4 @@
-# QML SVM Robustness Study
+# Noise Resilience and Parameter Efficiency of Quantum Classifiers
 
 This project contains the codebase for evaluating the resilience of Quantum Support Vector Classifiers (QSVC) against Variational Quantum Classifiers (VQC) under hardware noise.
 
@@ -17,7 +17,7 @@ The RBF-SVM was the most accurate model on every dataset (0.893 to 0.993). Among
 ## Usage
 Run the noisy simulation protocol:
 ```bash
-python rerun_noisy.py
+python robustness_study.py
 python plot_combined.py
 ```
 Final outputs, plots, and tables are saved in `results_revision/`.
