@@ -30,6 +30,13 @@ NOISE_LEVELS = {
 }
 
 def get_datasets():
+    """
+    Loads and prepares the 5 benchmark datasets used in the study.
+    Applies filtering for binary classification and subsamples larger datasets to 100 instances.
+    
+    Returns:
+        dict: A dictionary mapping dataset names to (X, y) tuples.
+    """
     datasets = {}
     
     # 1. Binary Iris
@@ -63,6 +70,19 @@ def get_datasets():
     return datasets
 
 def preprocess_data(X, y, random_state, n_features=2):
+    """
+    Preprocesses the data exactly as described in Algorithm 1 of the paper.
+    Steps: Train/Test Split (70/30) -> StandardScaler -> PCA -> MinMaxScaler (0 to pi).
+    
+    Args:
+        X (np.ndarray): Feature matrix.
+        y (np.ndarray): Target labels.
+        random_state (int): Seed for reproducibility.
+        n_features (int): Number of PCA components to retain (default 2).
+        
+    Returns:
+        tuple: (X_train_final, X_test_final, y_train, y_test)
+    """
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, stratify=y, random_state=random_state)
     
     std_scaler = StandardScaler()
@@ -87,6 +107,10 @@ def extract_circuit_metrics(circuit, pm):
     return transpiled.depth(), gates_1q, cnot_count
 
 def run_experiments():
+    """
+    Executes the main experimental pipeline across all datasets, models, seeds, and noise levels.
+    Saves the aggregated results to a CSV file at the end of the run.
+    """
     datasets = get_datasets()
     results = []
     
